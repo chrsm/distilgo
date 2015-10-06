@@ -45,7 +45,7 @@ func LoadIPs(r *bufio.Reader) (DistilRecords, error) {
 		// we have a line, and we should expect 2 \x01s according to the documentation.
 		i := bytes.Index(ln, distilDelim)
 		i2 := i + 1 + bytes.Index(ln[i+1:], distilDelim)
-		if i == -1 || i2 == -1 || i >= 15 {
+		if i == -1 || i2 == -1 || i > 15 {
 			break
 		}
 
