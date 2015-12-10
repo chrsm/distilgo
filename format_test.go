@@ -3,42 +3,30 @@ package distilgo
 import (
 	"bufio"
 	"os"
-	"sort"
 	"testing"
 )
 
-func testLoadDB() (*os.File, DistilRecords, error) {
+func testLoadDB() (*os.File, chan DistilRecord) {
 	f, err := os.Open("testdata/db")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil
 	}
 
-	l, e := LoadIPs(bufio.NewReader(f))
-	return f, l, e
-}
-
-func TestLoad(t *testing.T) {
-	f, _, err := testLoadDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	f.Close()
+	ch := LoadIPs(bufio.NewReader(f))
+	return f, ch
 }
 
 func TestValidRecords(t *testing.T) {
-	f, l, _ := testLoadDB()
+	f, l := testLoadDB()
 
-	if !sort.IsSorted(l) {
-		t.Error("IP List was not sorted")
-	}
+	c := 0
+	for {
+		r, more := <-l
+		if !more {
+			break
+		}
 
-	if len(l) == 0 {
-		t.Error("Read 0 records from test data.")
-	}
-
-	for i := range l {
-		r := l[i]
+		c++
 
 		if _, err := r.IP.MarshalText(); err != nil {
 			t.Error("Invalid IP address read")
@@ -47,6 +35,10 @@ func TestValidRecords(t *testing.T) {
 		if r.LastDetected.IsZero() {
 			t.Error("Invalid date read")
 		}
+	}
+
+	if c == 0 {
+		t.Error("Failed to read any records from test data")
 	}
 
 	f.Close()
